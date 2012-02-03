@@ -23,6 +23,7 @@ function extract-bsp()
 		rm kernel
 	fi
 	cp $LINUXOUT_DIR/bImage kernel
+	echo "$DEVICE/bImage copied!"
 
 	#extract linux modules
 	if [ -d modules ]; then
@@ -30,6 +31,7 @@ function extract-bsp()
 	fi
 	mkdir -p modules/modules
 	cp -rf $LINUXOUT_MODULE_DIR modules/modules
+	echo "$DEVICE/modules copied!"
 	chmod 0755 modules/modules/*
 
 # create modules.mk
@@ -40,14 +42,47 @@ PRODUCT_COPY_FILES += \\
 
 EOF
 
-	cd $CURDIR	
+	cd $CURDIR
+}
+
+function make-all()
+{
+	# check lichee dir
+	LICHEE_DIR=$ANDROID_BUILD_TOP/../lichee
+	if [ ! -d $LICHEE_DIR ] ; then
+		echo "$LICHEE_DIR not exists!"
+		return
+	fi
+
+	extract-bsp
+	m -j8
+} 
+
+# copy files for AndroidModify tool
+function copy_android_modify_tool_files()
+{
+	VENDOR=$(gettop)/../lichee/tools/pack/chips/sun4i/wboot/bootfs/vendor
+	rm $VENDOR -rf
+	mkdir $VENDOR
+	mkdir $VENDOR/system
+	mkdir $VENDOR/system/media
+	mkdir $VENDOR/system/usr
+	mkdir $VENDOR/system/usr/keylayout
+	cp $OUT/root/initlogo.rle $VENDOR/
+	cp $OUT/root/*.rc $VENDOR/
+	cp $OUT/system/build.prop $VENDOR/system
+	cp $OUT/system/media/bootanimation.zip $VENDOR/system/media
+	cp $OUT/system/usr/keylayout/*.kl $VENDOR/system/usr/keylayout
+
 }
 
 function pack()
 {
 	T=$(gettop)
 	export CRANE_IMAGE_OUT=$OUT
-	export PACKAGE=$T/../lichee/tools/pack	
+	export PACKAGE=$T/../lichee/tools/pack
+
+#	copy_android_modify_tool_files
 	sh $DEVICE/package.sh $1
 }
 
